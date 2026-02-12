@@ -1,4 +1,4 @@
-.env
+
 *.json
 *.log
 /__pyca che__/
