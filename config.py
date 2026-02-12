@@ -1,0 +1,12 @@
+# config.py
+
+WS_HOST = "0.0.0.0"
+WS_PORT = 8765
+
+HTTP_HOST = "0.0.0.0"
+HTTP_PORT = 5000
+
+SECRET = "SARA_SECRET"
+
+AUDIO_DIR = "./audio"
+LOG_LEVEL = "INFO"

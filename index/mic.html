@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sara Control — Compact</title>
+<style>
+  :root{
+    --bg:#071021; --card:#0e1822; --muted:#9fb0c8;
+    --accent:#39c0ff; --danger:#ff6b6b; --ok:#6fe19a;
+    --glass: rgba(255,255,255,0.02);
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#04101a,#071021);color:#e6f3fb;font-family:Inter,system-ui,Roboto,Arial}
+  .wrap{max-width:720px;margin:12px auto;padding:12px}
+  header{display:flex;align-items:center;gap:12px}
+  h1{font-size:18px;margin:0;font-weight:600}
+  .status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .dot{width:12px;height:12px;border-radius:50%;background:#394d5d}
+  .dot.on{background:var(--ok)}
+  .card{background:var(--card);border-radius:12px;padding:12px;margin-top:12px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+  input[type=text], input[type=range], select{
+    width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);
+    background:transparent;color:inherit;font-size:14px;
+  }
+  .row{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--accent);border:0;color:#022028;padding:10px 14px;border-radius:10px;font-weight:600}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .mic{
+    width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#052035,#083141);
+    border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 26px rgba(0,0,0,0.6)
+  }
+  .mic .circle{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,#56e1ff,#1fb0e8)}
+  .mic.listening{box-shadow:0 0 0 12px rgba(31,176,232,0.06);transform:scale(1.02)}
+  .controls-grid{display:grid;grid-template-columns:72px 72px 72px;gap:8px;justify-content:center;margin-top:12px}
+  .dir{width:64px;height:64px;border-radius:10px;border:0;background:linear-gradient(180deg,#0b3a46,#06333a);color:#e6fbff;font-weight:700;display:grid;place-items:center}
+  .stop{background:var(--danger)}
+  .small{font-size:13px;color:var(--muted)}
+  .history{margin-top:10px;max-height:120px;overflow:auto;padding:8px;border-radius:8px;background:var(--glass);font-size:13px}
+  .hid{display:none}
+  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:12px}
+  @media (min-width:520px){.wrap{padding:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sara Control</h1>
+    <div class="status">
+      <div id="dot" class="dot"></div>
+      <div id="statText" class="small">disconnected</div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div style="display:flex;gap:8px;align-items:flex-start">
+      <div style="flex:1">
+        <label>Server (WS)</label>
+        <input id="wsUrl" type="text" value="ws://192.168.137.110:9001">
+      </div>
+      <div style="width:150px">
+        <label>Secret</label>
+        <input id="secret" type="text" value="SARA_SECRET_123">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+      <button id="connectBtn" class="btn">Connect</button>
+      <button id="disconnectBtn" class="btn ghost">Disconnect</button>
+      <select id="mode" style="width:150px">
+        <option value="continuous">Continuous</option>
+        <option value="push">Push-to-talk</option>
+        <option value="wake">Wake-word</option>
+      </select>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-top:14px">
+      <div id="mic" class="mic" title="Tap to toggle mic">
+        <div class="circle"></div>
+      </div>
+
+      <div style="flex:1">
+        <label>Last recognized</label>
+        <input id="last" type="text" readonly>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="ptt" class="btn ghost">PTT</button>
+          <button id="clear" class="btn ghost">Clear</button>
+          <button id="histToggle" class="btn ghost">History</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-grid">
+      <div></div>
+      <button id="btnUp" class="dir">↑</button>
+      <div></div>
+
+      <button id="btnLeft" class="dir">←</button>
+      <button id="btnStop" class="dir stop">STOP</button>
+      <button id="btnRight" class="dir">→</button>
+
+      <div></div>
+      <button id="btnDown" class="dir">↓</button>
+      <div></div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <label style="width:60px" class="small">Speed</label>
+      <input id="speed" type="range" min="20" max="100" value="70">
+      <div id="speedVal" class="small">70%</div>
+      <label style="margin-left:auto" class="small">Wake word</label>
+      <input id="wake" type="text" value="sara" style="width:140px">
+    </div>
+
+    <div id="history" class="history hid"></div>
+  </div>
+
+  <footer>Hold a direction button to move; release to stop. Wake-word filters are applied on Pi.</footer>
+</div>
+
+<script>
+(function(){
+  // Elements
+  const wsInput = document.getElementById('wsUrl');
+  const secretInput = document.getElementById('secret');
+  const connectBtn = document.getElementById('connectBtn');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+  const dot = document.getElementById('dot');
+  const statText = document.getElementById('statText');
+  const mic = document.getElementById('mic');
+  const last = document.getElementById('last');
+  const ptt = document.getElementById('ptt');
+  const clearBtn = document.getElementById('clear');
+  const histToggle = document.getElementById('histToggle');
+  const historyEl = document.getElementById('history');
+  const modeSel = document.getElementById('mode');
+  const wakeInput = document.getElementById('wake');
+  const speed = document.getElementById('speed');
+  const speedVal = document.getElementById('speedVal');
+
+  const btnUp = document.getElementById('btnUp');
+  const btnDown = document.getElementById('btnDown');
+  const btnLeft = document.getElementById('btnLeft');
+  const btnRight = document.getElementById('btnRight');
+  const btnStop = document.getElementById('btnStop');
+
+  // state
+  let ws = null;
+  let recognizer = null;
+  let listening = false;
+  let pttActive = false;
+  let repeat = null;
+  let curAction = null;
+  let sentCount = 0;
+
+  // reconnect/backoff
+  let reconnectDelay = 1000;
+  let reconnectTimer = null;
+  let manualDisconnect = false;
+
+  // localStorage: remember server & secret
+  if(localStorage.getItem('sara_ws')) wsInput.value = localStorage.getItem('sara_ws');
+  if(localStorage.getItem('sara_secret')) secretInput.value = localStorage.getItem('sara_secret');
+
+  function setStatus(connected, label){
+    dot.className = 'dot' + (connected ? ' on' : '');
+    statText.textContent = label || (connected ? 'connected' : 'disconnected');
+  }
+
+  function addHistory(line){
+    const d = document.createElement('div');
+    d.textContent = `${new Date().toLocaleTimeString()}  —  ${line}`;
+    historyEl.prepend(d);
+    sentCount++;
+  }
+
+  // ---------- WEBSOCKET (robust) ----------
+  function connect(){
+    const url = wsInput.value.trim();
+    if(!url){
+      setStatus(false,'no url');
+      return;
+    }
+    manualDisconnect = false;
+    if(ws && ws.readyState === WebSocket.OPEN) return;
+
+    tryOpen();
+  }
+
+  function tryOpen(){
+    const url = wsInput.value.trim();
+    console.debug("[WS] trying", url, "delay", reconnectDelay);
+    ws = new WebSocket(url);
+
+    ws.onopen = ()=>{
+      console.info("[WS] open");
+      setStatus(true,'connected');
+      reconnectDelay = 1000;
+      if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer = null; }
+    };
+
+    ws.onmessage = (ev)=>{
+      // log server messages (pings, acks, errors)
+      try {
+        const data = JSON.parse(ev.data);
+        console.debug("[WS msg]", data);
+        // display server notice if error
+        if(data.type === 'error' || data.reason){
+          addHistory('Server: ' + (data.reason || JSON.stringify(data)));
+        }
+        // optional: handle server->client commands here
+        return;
+      } catch(e){
+        console.debug("[WS raw]", ev.data);
+      }
+    };
+
+    ws.onerror = (err)=>{
+      console.warn("[WS] error", err);
+    };
+
+    ws.onclose = (ev)=>{
+      console.warn("[WS] closed", ev.code, ev.reason);
+      setStatus(false,'disconnected');
+      if(manualDisconnect) return;
+      // exponential backoff capped at 30s
+      reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+      reconnectTimer = setTimeout(tryOpen, reconnectDelay);
+    };
+  }
+
+  function disconnect(){
+    manualDisconnect = true;
+    if(ws){ try{ ws.close(); }catch(e){} ws=null; }
+    setStatus(false,'disconnected');
+  }
+
+  function send(text){
+    if(!ws || ws.readyState !== WebSocket.OPEN){
+      addHistory('Local: '+text+' (no ws)');
+      return false;
+    }
+    const payload = { auth: secretInput.value.trim(), text };
+    try{
+      ws.send(JSON.stringify(payload));
+      addHistory('Sent: '+text);
+      last.value = text;
+      return true;
+    }catch(e){
+      addHistory('Send failed');
+      return false;
+    }
+  }
+
+  // ---------- SpeechRecognition wrapper ----------
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  // create/replace recognizer to reflect current mode
+  function createRecognizer(){
+    if(!SpeechRec) return null;
+    // always make a fresh recognizer so .continuous matches current mode
+    if(recognizer){
+      try{ recognizer.onend = null; recognizer.onresult = null; recognizer.onerror = null; recognizer = null; } catch(e){}
+    }
+    recognizer = new SpeechRec();
+    recognizer.lang = 'en-IN';
+    recognizer.interimResults = false;
+    recognizer.maxAlternatives = 1;
+    recognizer.continuous = (modeSel.value === 'continuous');
+
+    recognizer.onstart = ()=> { listening = true; mic.classList.add('listening'); console.debug("[REC] started"); };
+    recognizer.onresult = (e)=> {
+      const t = e.results[e.resultIndex][0].transcript.trim();
+      last.value = t;
+      handleRecognized(t);
+    };
+    recognizer.onerror = (ev)=> {
+      console.warn("[REC] error", ev);
+      addHistory('Rec error: '+ev.error);
+      listening=false; mic.classList.remove('listening');
+      // if fatal error (not 'no-speech'), try restart later if continuous
+      if(modeSel.value === 'continuous'){
+        setTimeout(()=> safeStartRecognizer(), 400);
+      }
+    };
+
+    // onend: restart if continuous (with a short delay to avoid rapid loops)
+    recognizer.onend = ()=> {
+      listening=false;
+      mic.classList.remove('listening');
+      console.debug("[REC] ended");
+      if(modeSel.value === 'continuous'){
+        // small jitter delay: some browsers throttle immediate restart
+        setTimeout(()=> safeStartRecognizer(), 300);
+      }
+    };
+
+    return recognizer;
+  }
+
+  // safe start that won't throw if recognizer already running
+  function safeStartRecognizer(){
+    if(!SpeechRec) return;
+    if(!recognizer) createRecognizer();
+    try{
+      recognizer.start();
+    }catch(e){
+      console.warn("[REC] start exception", e);
+      // try recreate after a short delay
+      setTimeout(()=> { try{ createRecognizer(); recognizer.start(); }catch(_){} }, 500);
+    }
+  }
+
+  function ensureRecog(){
+    if(!SpeechRec) return null;
+    if(!recognizer) return createRecognizer();
+    // if mode changed since creation, recreate
+    const shouldCont = (modeSel.value === 'continuous');
+    if(recognizer.continuous !== shouldCont){
+      return createRecognizer();
+    }
+    return recognizer;
+  }
+
+  function handleRecognized(text){
+    const mode = modeSel.value;
+    if(mode==='wake'){
+      const w = (wakeInput.value||'').trim().toLowerCase();
+      if(!text.toLowerCase().includes(w)){ addHistory('Ignored: '+text); return; }
+      text = text.replace(new RegExp(w,'gi'),'').trim();
+      if(!text) return;
+    }
+    if(mode==='push' && !pttActive){ addHistory('PTT ignored'); return; }
+    send(text);
+  }
+
+  // mic toggle
+  mic.addEventListener('click', ()=>{
+    if(modeSel.value==='push'){ pttActive = !pttActive; ptt.textContent = pttActive ? 'PTT: ON' : 'PTT'; return; }
+    if(!SpeechRec){ addHistory('No speech API'); return; }
+    const r = ensureRecog();
+    if(!r) { addHistory('Recognizer not available'); return; }
+    if(listening){ try{ r.stop(); }catch(e){ console.warn(e); } } else { try{ r.start(); }catch(e){ console.warn(e); } }
+  });
+
+  // PTT hold handlers (works on desktop/mobile)
+  ptt.addEventListener('touchstart', ()=>{ if(modeSel.value!=='push') return; pttActive=true; ptt.textContent='PTT: HOLD'; try{ ensureRecog().start(); }catch(e){} }, {passive:true});
+  ptt.addEventListener('touchend', ()=>{ if(modeSel.value!=='push') return; pttActive=false; ptt.textContent='PTT'; try{ recognizer && recognizer.stop(); }catch(e){} }, {passive:true});
+  ptt.addEventListener('mousedown', ()=>{ if(modeSel.value!=='push') return; pttActive=true; ptt.textContent='PTT: HOLD'; try{ ensureRecog().start(); }catch(e){} });
+  ptt.addEventListener('mouseup', ()=>{ if(modeSel.value!=='push') return; pttActive=false; ptt.textContent='PTT'; try{ recognizer && recognizer.stop(); }catch(e){} });
+
+  // manual controls (same as original)
+  function map(a){
+    switch(a){
+      case 'forward': return 'move forward';
+      case 'backward': return 'move backward';
+      case 'left': return 'turn left';
+      case 'right': return 'turn right';
+      case 'stop': return 'stop';
+    }
+  }
+  function startManual(action){
+    if(curAction) return;
+    curAction = action;
+    send(map(action));
+    repeat = setInterval(()=> send(map(action)), 500);
+  }
+  function stopManual(){
+    if(repeat){ clearInterval(repeat); repeat = null; }
+    curAction = null;
+    send('stop');
+    setTimeout(()=> send('stop'), 100);
+    setTimeout(()=> send('stop'), 250);
+  }
+  function bindHold(el, action){
+    el.addEventListener('touchstart', (e)=>{ e.preventDefault(); startManual(action); }, {passive:false});
+    el.addEventListener('touchend', (e)=>{ e.preventDefault(); stopManual(); }, {passive:false});
+    el.addEventListener('mousedown', ()=> startManual(action));
+    el.addEventListener('mouseup', stopManual);
+    el.addEventListener('mouseleave', stopManual);
+  }
+  bindHold(btnUp,'forward');
+  bindHold(btnDown,'backward');
+  bindHold(btnLeft,'left');
+  bindHold(btnRight,'right');
+  btnStop.addEventListener('click', ()=> stopManual());
+
+  // UI bindings
+  connectBtn.addEventListener('click', ()=> { localStorage.setItem('sara_ws', wsInput.value.trim()); localStorage.setItem('sara_secret', secretInput.value.trim()); connect(); });
+  disconnectBtn.addEventListener('click', disconnect);
+  clearBtn.addEventListener('click', ()=>{ historyEl.innerHTML=''; sentCount=0; });
+  histToggle.addEventListener('click', ()=> { historyEl.classList.toggle('hid'); });
+  speed.addEventListener('input', ()=> speedVal.textContent = speed.value + '%');
+
+  // start: set UI
+  setStatus(false,'disconnected');
+
+  // Expose debug helpers
+  window.sara = { connect, disconnect, send, ensureRecog, createRecognizer };
+})();
+</script>
+
+</body>
+</html>

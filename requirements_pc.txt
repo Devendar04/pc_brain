@@ -1,0 +1,16 @@
+flask
+flask-cors
+websockets
+aiohttp
+requests
+
+
+sounddevice
+numpy
+faiss-cpu
+python-dotenv
+python-docx
+lxml
+opencv-python
+pytest
+edge-tts
